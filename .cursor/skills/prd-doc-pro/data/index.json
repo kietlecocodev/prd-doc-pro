@@ -1,0 +1,55 @@
+{
+  "version": "2.0",
+  "domains": {
+    "product-type": {
+      "file": "product-types.csv",
+      "count": 24,
+      "summary": "summaries/product-types.json",
+      "description": "SaaS product archetypes with recommended PRD structure, personas, metrics, and mobile-first types"
+    },
+    "section": {
+      "file": "sections.csv",
+      "count": 18,
+      "summary": "summaries/sections.json",
+      "description": "PRD section templates with writing tips, priority, and common mistakes"
+    },
+    "user-story": {
+      "file": "user-stories.csv",
+      "count": 31,
+      "summary": "summaries/user-stories.json",
+      "description": "User story patterns with good/bad examples, AC formats, and mobile interaction stories"
+    },
+    "antipattern": {
+      "file": "antipatterns.csv",
+      "count": 25,
+      "summary": "summaries/antipatterns.json",
+      "description": "PRD antipatterns with bad/good examples, root cause, and fix — including mobile-specific pitfalls"
+    },
+    "metric": {
+      "file": "metrics.csv",
+      "count": 28,
+      "summary": "summaries/metrics.json",
+      "description": "SaaS and mobile KPIs with formulas, benchmarks, and anti-metric warnings"
+    },
+    "template": {
+      "file": "templates.csv",
+      "count": 9,
+      "summary": "summaries/templates.json",
+      "description": "PRD templates with copy-ready markdown scaffolds"
+    },
+    "platform-rules": {
+      "file": "platform-rules.csv",
+      "count": 20,
+      "summary": "summaries/platform-rules.json",
+      "description": "iOS App Store and Google Play Store guidelines that affect PRD requirements"
+    },
+    "mobile-ux": {
+      "file": "mobile-ux.csv",
+      "count": 20,
+      "summary": "summaries/mobile-ux.json",
+      "description": "Mobile UX patterns, navigation, gestures, accessibility, and interaction design"
+    }
+  },
+  "total_rows": 175,
+  "retrieval_strategy": "tier1_index → tier2_summary → tier3_detail_on_demand"
+}

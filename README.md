@@ -1,222 +1,182 @@
-# PRD Doc Pro
+# PRD Doc Pro v2
 
-**PRD Doc Pro** is an [Agent Skill](https://docs.cursor.com/context/skills) for Product Owners building **SaaS** product requirements. It pairs a **searchable knowledge base** (CSV + BM25) with a **PRD scaffold generator** so assistants can produce structured PRDs, user stories, metrics, and antipattern checks grounded in consistent playbooks.
-
----
-
-## What it does
-
-| Capability | Description |
-|------------|-------------|
-| **Product-type routing** | 13 SaaS archetypes (PLG, enterprise, API, AI, verticals, etc.) with recommended section order, personas, and metric focus. |
-| **Section guidance** | 18 PRD sections with copy-ready templates, writing tips, and common mistakes. |
-| **User stories** | 20 story categories with strong/weak examples, acceptance-criteria patterns, and SaaS context. |
-| **Antipatterns** | 17 documented mistakes with bad vs good examples and concrete fixes. |
-| **Metrics** | 16 SaaS metrics with definitions, formulas, benchmarks, and “anti-metric” warnings. |
-| **Templates** | 9 PRD shapes (one-pager, full feature, epic, MVP, RFC, AI feature, API, etc.). |
-| **Full scaffold** | One command that combines detection + sections + starter stories + metrics + antipatterns + template body. |
+**PRD Doc Pro** is an [Agent Skill](https://docs.cursor.com/context/skills) for Product Owners building **SaaS mobile product** requirements. It pairs a **searchable knowledge base** (CSV + BM25) with a **PRD scaffold generator**, **review engine**, and **mobile platform intelligence** so assistants can produce structured, high-quality PRDs grounded in consistent playbooks.
 
 ---
 
-## How the system works
+## What's New in v2
 
-At a high level, the skill has three layers (similar in spirit to [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)):
+| Feature | v1 | v2 |
+|---------|----|----|
+| Product types | 13 | **24** (11 mobile-first archetypes) |
+| User story patterns | 20 | **31** (11 mobile interaction stories) |
+| Antipatterns | 17 | **25** (8 mobile-specific) |
+| Metrics / KPIs | 16 | **28** (12 mobile KPIs) |
+| **PRD Review Engine** | — | **Scores 0-100** with section-by-section rubric |
+| **Platform Rules** | — | **20 iOS/Android** App Store & Play Store rules |
+| **Mobile UX Patterns** | — | **20 patterns** with good/bad examples |
+| **Gold Examples** | — | **10 annotated** PRD excerpts (7 good, 3 bad) |
+| **Export** | — | **5 formats**: markdown, confluence, notion, html, text |
+| **Platform Checklists** | — | **Auto-generated** iOS + Android checklists per feature |
+| **Tests** | 0 | **26 tests** covering all modules |
+| Total knowledge rows | 93 | **175+** |
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  SKILL.md                                                        │
-│  When to run it, workflow steps, domain table, checklists         │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │ instructs the agent to run
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  scripts/search.py  →  scripts/core.py (BM25) + generator.py    │
-│  • --generate-prd: assemble a full PRD outline                    │
-│  • --domain <name>: search one knowledge domain                  │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │ reads
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  data/*.csv                                                      │
-│  Tabular knowledge: which columns are indexed vs returned        │
-└─────────────────────────────────────────────────────────────────┘
+---
+
+## Quick Start
+
+### Generate a Mobile PRD
+```bash
+python3 scripts/search.py "ride-sharing mobile app" \
+  --generate-prd -p "GoRide" \
+  --platform ios,android \
+  -f markdown
 ```
 
-### Search engine (`core.py`)
+### Review an Existing PRD
+```bash
+python3 scripts/search.py --review my-prd.md --strict --mobile
+```
 
-- Each **domain** maps to one CSV file and two column lists:
-  - **Search columns** — tokenized and indexed for retrieval (BM25-style scoring).
-  - **Output columns** — fields returned to the model (guidance, examples, templates).
-- Queries are free text (e.g. `"PLG onboarding activation"`); the top rows per domain are ranked by relevance to the query.
+Output: scorecard with 0-100 score, section-by-section grades, top issues with fixes, and fill-in guidance for missing sections.
 
-### Generator (`generator.py`)
+### Search Knowledge Base
+```bash
+# Mobile metrics
+python3 scripts/search.py "crash rate retention DAU" --domain metric
 
-When you run `--generate-prd`, the generator:
+# Platform compliance rules
+python3 scripts/search.py "in-app purchase apple" --domain platform-rules
 
-1. Scores **product-type** rows against your description and picks the best SaaS subtype.
-2. Pulls **section** hints, **user-story** starters, **metric** suggestions, and **antipattern** warnings using the same search engine.
-3. Selects a **template** row matching the recommended PRD type.
-4. Renders **ASCII** or **Markdown** output (CLI flag).
+# Mobile UX patterns
+python3 scripts/search.py "bottom sheet navigation" --domain mobile-ux
 
-### Persistence (`--persist`)
+# Antipatterns
+python3 scripts/search.py "permission spam offline" --domain antipattern
+```
 
-Optional: writes `prd-docs/<project-slug>/MASTER.md` (and optionally `sections/<name>.md`) in the **current working directory**, so long-running work can use a master doc plus section overrides.
+### Show Gold-Standard Examples
+```bash
+python3 scripts/search.py --list-examples
+python3 scripts/search.py --example good/01-problem-statement
+python3 scripts/search.py --example bad/02-user-stories
+```
+
+### Export to Other Formats
+```bash
+python3 scripts/search.py --export my-prd.md --export-format confluence
+python3 scripts/search.py --export my-prd.md --export-format html --export-output prd.html
+```
 
 ---
 
-## Repository layout
+## Architecture
 
-```text
-prd-doc-pro/
-├── README.md                          ← this file
-└── .cursor/skills/prd-doc-pro/
-    ├── SKILL.md                       ← skill entry (instructions + triggers)
-    ├── scripts/
-    │   ├── search.py                  ← CLI
-    │   ├── core.py                    ← BM25 + CSV_CONFIG
-    │   └── generator.py               ← PRD assembly
-    └── data/
-        ├── product-types.csv
-        ├── sections.csv
-        ├── user-stories.csv
-        ├── antipatterns.csv
-        ├── metrics.csv
-        └── templates.csv
 ```
+┌──────────────────────────────────────────────────────────────┐
+│  SKILL.md — Compact dispatch (~1.5K tokens)                   │
+└──────────────────────┬───────────────────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────────────────┐
+│  scripts/                                                     │
+│  ├── search.py      — CLI entry point (all commands)          │
+│  ├── core.py        — BM25 search engine + CSV config         │
+│  ├── generator.py   — PRD scaffold assembly + mobile intel    │
+│  ├── reviewer.py    — Review engine (scoring rubric)          │
+│  ├── platform.py    — iOS/Android platform intelligence       │
+│  └── exporter.py    — Format conversion (confluence/html/...) │
+└──────────────────────┬───────────────────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────────────────┐
+│  data/                                                        │
+│  ├── product-types.csv    (24 types)                          │
+│  ├── sections.csv         (18 sections)                       │
+│  ├── user-stories.csv     (31 patterns)                       │
+│  ├── antipatterns.csv     (25 antipatterns)                    │
+│  ├── metrics.csv          (28 KPIs)                           │
+│  ├── templates.csv        (9 templates)                       │
+│  ├── platform-rules.csv   (20 iOS/Android rules)              │
+│  ├── mobile-ux.csv        (20 UX patterns)                    │
+│  ├── index.json           (tier-1 routing metadata)           │
+│  └── details/examples/    (10 annotated PRD examples)         │
+│      ├── good/  (7 gold-standard section examples)            │
+│      └── bad/   (3 annotated anti-pattern examples)           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Knowledge Domains
+
+| Domain | Rows | What It Contains |
+|--------|------|-----------------|
+| `product-type` | 24 | SaaS archetypes: B2B, PLG, enterprise, **mobile-first**, mobile fintech, mobile health, mobile social, mobile e-commerce, mobile edtech, mobile productivity, super app, AI mobile |
+| `section` | 18 | PRD section templates with writing tips, priority, and common mistakes |
+| `user-story` | 31 | Story patterns with good/bad examples, AC formats. **Mobile**: push, biometric, offline, camera, location, deep link, gestures, search, paywall, app update |
+| `antipattern` | 25 | PRD mistakes with annotated examples and fixes. **Mobile**: permission spam, notification abuse, offline ignorance, desktop-first design, no rollback plan, no performance budget, platform differences ignored, no app store compliance |
+| `metric` | 28 | KPIs with formulas, benchmarks, anti-metric warnings. **Mobile**: D1/D7/D30 retention, crash-free rate, app store rating, push opt-in, cold start time, session length, app size, deep link conversion, uninstall rate, IAP conversion, widget usage, background sync |
+| `template` | 9 | Copy-ready PRD markdown scaffolds |
+| `platform-rules` | 20 | iOS App Store + Google Play Store guidelines that affect PRD requirements |
+| `mobile-ux` | 20 | Mobile UX patterns: navigation, loading, interaction, onboarding, search, layout, dark mode, accessibility |
+
+---
+
+## Review Engine
+
+The review engine scores PRDs 0-100 against a rubric with checks for:
+
+- **Problem Statement** (15 pts): Quantified pain, no solution leaking, user + business impact
+- **Target Users** (10 pts): Specific named personas with context and motivation
+- **Goals** (10 pts): Outcome-based (not feature-based), measurable
+- **Success Metrics** (15 pts): Baselines, targets, timeframes, formulas, mobile KPIs
+- **User Stories** (20 pts): Specific personas, so-that clauses, testable AC, sprint-sized
+- **Out of Scope** (5 pts): Explicit exclusions with rationale
+- **Guardrails** (8 pts): Metrics that must not regress
+- **Edge Cases** (7 pts): Error states, mobile-specific scenarios
+- **Design** (5 pts): Wireframes or design principles referenced
+- **Launch** (5 pts): Phased rollout, feature flags, rollback criteria
+
+### Grading Scale
+| Score | Grade | Meaning |
+|-------|-------|---------|
+| 90-100 | EXCELLENT | Ready for engineering |
+| 75-89 | GOOD | Minor gaps, addressable quickly |
+| 60-74 | NEEDS WORK | Significant gaps, iterate before handoff |
+| 40-59 | WEAK | Major sections missing or inadequate |
+| 0-39 | CRITICAL | Not ready — needs fundamental rework |
 
 ---
 
 ## Requirements
 
-- **Python 3** (scripts use `typing` patterns compatible with 3.9+; run with `python3`).
-
-No extra pip packages — only the standard library.
+- **Python 3.9+** (stdlib only — no pip packages)
 
 ---
 
 ## Installation
 
-### Cursor (this repo)
+### Cursor
+The skill ships under `.cursor/skills/prd-doc-pro/`. Cursor loads it automatically.
 
-The skill ships under **project** skills:
-
-`.cursor/skills/prd-doc-pro/`
-
-Cursor loads skills from that path when you work in this repository. The agent discovers it via the YAML `description` in `SKILL.md`.
-
-### Claude CLI / global Claude skills
-
-Copy the skill folder to your user skills directory so it applies to all projects:
-
+### Claude Code
 ```bash
 mkdir -p ~/.claude/skills
 cp -R .cursor/skills/prd-doc-pro ~/.claude/skills/
 ```
 
-For **Claude CLI**, use absolute paths in `SKILL.md` for `search.py` (e.g. `~/.claude/skills/prd-doc-pro/scripts/search.py`) if you want the instructions to work from any working directory. The copy in this repo uses **relative** paths under `.cursor/...` suited for Cursor.
+---
+
+## Running Tests
+
+```bash
+cd .cursor/skills/prd-doc-pro/tests
+python3 test_core.py -v
+```
+
+26 tests covering: search engine, all 8 domains, review engine, scoring, exporter, platform intelligence.
 
 ---
 
-## How to use the skill
+## License
 
-### With an AI assistant (recommended)
-
-Describe the product or feature in natural language. Examples:
-
-- *“Draft a PRD for a B2B SaaS enterprise onboarding flow.”*
-- *“Give me user stories and acceptance criteria for CSV import.”*
-- *“What success metrics fit a PLG freemium product?”*
-- *“Review this problem statement for PRD antipatterns.”*
-
-The assistant should follow `SKILL.md`: analyze the request, run `--generate-prd` for new PRDs, then use `--domain` searches to deepen specific sections.
-
-### From the command line
-
-From the **repository root**, paths below assume the bundled skill location.
-
-**Full PRD scaffold:**
-
-```bash
-python3 .cursor/skills/prd-doc-pro/scripts/search.py \
-  "PLG SaaS onboarding and activation" \
-  --generate-prd -p "MyProduct"
-```
-
-Markdown output:
-
-```bash
-python3 .cursor/skills/prd-doc-pro/scripts/search.py \
-  "Your description" \
-  --generate-prd -p "MyProduct" \
-  --format markdown
-```
-
-**Save to disk:**
-
-```bash
-python3 .cursor/skills/prd-doc-pro/scripts/search.py \
-  "Your description" \
-  --generate-prd --persist -p "MyProduct"
-# Optionally: --section "requirements" --output-dir /path/to/repo
-```
-
-**Search a single domain:**
-
-```bash
-python3 .cursor/skills/prd-doc-pro/scripts/search.py \
-  "problem statement quantified evidence" \
-  --domain section -n 3
-```
-
-**JSON output (domain search only):**
-
-```bash
-python3 .cursor/skills/prd-doc-pro/scripts/search.py \
-  "freemium conversion" \
-  --domain metric \
-  --json
-```
-
-### Knowledge domains (`--domain`)
-
-| Domain | CSV | Use for |
-|--------|-----|--------|
-| `product-type` | `product-types.csv` | Which SaaS shape, template, section order, personas |
-| `section` | `sections.csv` | Section content, tips, mistakes |
-| `user-story` | `user-stories.csv` | Story patterns and AC examples |
-| `antipattern` | `antipatterns.csv` | Bad/good examples and fixes |
-| `metric` | `metrics.csv` | KPIs, formulas, benchmarks |
-| `template` | `templates.csv` | Full markdown scaffolds |
-
----
-
-## Extending the skill
-
-1. **Add or edit rows** in the CSVs (keep header names stable, or update `CSV_CONFIG` in `core.py`).
-2. **Add a new domain**: new CSV + new entry in `CSV_CONFIG` with `file`, `search_cols`, and `output_cols`.
-3. **Regenerate** — no build step; the CLI reads CSVs at runtime.
-
-Use a CSV editor or Python `csv` module with `QUOTE_ALL` for fields that contain commas or newlines.
-
----
-
-## License and attribution
-
-Knowledge in the CSVs synthesizes common product-management practice and public guides (e.g. PRD structure, user stories, metrics). Use and adapt for your team; cite internal policies and your own data when writing real PRDs.
-
----
-
-## Quick reference — one-liners
-
-```bash
-# Scaffold
-python3 .cursor/skills/prd-doc-pro/scripts/search.py "AI writing assistant B2B" --generate-prd -p "WriteAI" -f markdown
-
-# Antipatterns
-python3 .cursor/skills/prd-doc-pro/scripts/search.py "vague requirements no metrics" --domain antipattern
-
-# Metrics for PLG
-python3 .cursor/skills/prd-doc-pro/scripts/search.py "plg activation conversion" --domain metric
-```
-
-For the global Claude install, prefix with `~/.claude/skills/prd-doc-pro/scripts/search.py` instead.
+Knowledge in the CSVs synthesizes common product-management practice and public guides. Use and adapt for your team.

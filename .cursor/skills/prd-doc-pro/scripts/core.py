@@ -51,6 +51,18 @@ CSV_CONFIG = {
         "output_cols": ["Template Name", "Use When", "Length Guide", "Required Sections",
                         "Optional Sections", "Markdown Template", "Notes"]
     },
+    "platform-rules": {
+        "file": "platform-rules.csv",
+        "search_cols": ["Rule Name", "Platform", "Keywords", "Category", "Requirement"],
+        "output_cols": ["Rule Name", "Platform", "Category", "Guideline Reference",
+                        "Requirement", "Impact If Violated", "PRD Action Required", "Common Mistakes"]
+    },
+    "mobile-ux": {
+        "file": "mobile-ux.csv",
+        "search_cols": ["Pattern Name", "Platform", "Keywords", "Category", "Description"],
+        "output_cols": ["Pattern Name", "Platform", "Category", "Description",
+                        "When to Use", "PRD Guidance", "Good Example", "Bad Example", "Accessibility Note"]
+    },
 }
 
 AVAILABLE_DOMAINS = list(CSV_CONFIG.keys())

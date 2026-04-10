@@ -9,8 +9,9 @@ user story starters, metric suggestions, and antipattern warnings.
 """
 
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from core import search, search_domain, load_all_rows, MAX_RESULTS
+from platform import generate_mobile_checklist, generate_platform_differences, get_platform_context
 
 
 def _truncate(text: str, max_chars: int = 250) -> str:
@@ -33,6 +34,7 @@ def generate_prd(
     persist: bool = False,
     section: Optional[str] = None,
     output_dir: Optional[str] = None,
+    platforms: Optional[List[str]] = None,
 ) -> str:
     """
     Generate a complete PRD scaffold for the given product description.
@@ -79,24 +81,64 @@ def generate_prd(
     template_row = template_result["results"][0] if template_result["results"] else {}
     template_markdown = template_row.get("Markdown Template", "").replace("\\n", "\n")
 
+    # ── 7. Mobile platform intelligence ─────────────────────────────────
+    is_mobile = bool(platforms) or "mobile" in product_type.lower() or "mobile" in query.lower() or "ios" in query.lower() or "android" in query.lower()
+    mobile_checklist = ""
+    platform_diff = ""
+    platform_rules_section = ""
+
+    if is_mobile:
+        target_platforms = platforms or ["ios", "android"]
+        feature_hints = [query, product_type, key_considerations]
+        mobile_checklist = generate_mobile_checklist(target_platforms, feature_hints, product_type)
+        if len(target_platforms) > 1:
+            platform_diff = generate_platform_differences(target_platforms)
+
+        # Get relevant platform rules
+        rules_result = search_domain(query + " " + product_type + " mobile app store", "platform-rules", max_results=5)
+        if rules_result.get("results"):
+            platform_rules_section = _render_platform_rules(rules_result["results"])
+
+        # Get relevant mobile UX patterns
+        ux_result = search_domain(query + " mobile navigation interaction", "mobile-ux", max_results=3)
+        ux_patterns = ux_result.get("results", [])
+    else:
+        ux_patterns = []
+
     # ── Render ──────────────────────────────────────────────────────────
     if output_format == "markdown":
         return _render_markdown(
             project_label, product_type, recommended_template, recommended_depth,
             personas, sections_order, key_considerations, oos_mistakes,
-            sections, stories, metrics, antipatterns, template_markdown
+            sections, stories, metrics, antipatterns, template_markdown,
+            mobile_checklist, platform_diff, platform_rules_section, ux_patterns,
         )
     else:
         return _render_ascii(
             project_label, product_type, recommended_template, recommended_depth,
             personas, sections_order, key_considerations, oos_mistakes,
-            sections, stories, metrics, antipatterns, template_markdown
+            sections, stories, metrics, antipatterns, template_markdown,
+            mobile_checklist, platform_diff, platform_rules_section, ux_patterns,
         )
+
+
+def _render_platform_rules(rules: list) -> str:
+    lines = ["## App Store & Platform Compliance"]
+    for rule in rules:
+        name = rule.get("Rule Name", "")
+        platform = rule.get("Platform", "")
+        requirement = _truncate(rule.get("Requirement", ""), 200)
+        action = _truncate(rule.get("PRD Action Required", ""), 200)
+        lines.append(f"\n### {name} ({platform})")
+        lines.append(f"**Requirement:** {requirement}")
+        lines.append(f"**PRD Action:** {action}")
+    return "\n".join(lines)
 
 
 def _render_ascii(project, product_type, template, depth, personas, sections_order,
                   considerations, oos, sections, stories, metrics, antipatterns,
-                  template_markdown):
+                  template_markdown, mobile_checklist="", platform_diff="",
+                  platform_rules="", ux_patterns=None):
     out = []
     w = 72
 
@@ -176,6 +218,38 @@ def _render_ascii(project, product_type, template, depth, personas, sections_ord
         out.append(f"\n◆ COMMON OUT-OF-SCOPE MISTAKES")
         out.append(f"  Watch out: {oos}")
 
+    # Mobile UX patterns
+    if ux_patterns:
+        out.append(f"\n◆ RECOMMENDED MOBILE UX PATTERNS")
+        for p in ux_patterns:
+            name = p.get("Pattern Name", "")
+            desc = _truncate(p.get("Description", ""), 120)
+            guidance = _truncate(p.get("PRD Guidance", ""), 150)
+            out.append(f"\n  {name}")
+            out.append(f"  {desc}")
+            out.append(f"  PRD: {guidance}")
+
+    # Platform rules
+    if platform_rules:
+        out.append(f"\n◆ APP STORE & PLATFORM COMPLIANCE")
+        for line in platform_rules.split("\n"):
+            if line.strip() and not line.startswith("#"):
+                out.append(f"  {line.strip()}")
+
+    # Platform differences
+    if platform_diff:
+        out.append(f"\n◆ PLATFORM DIFFERENCES (iOS vs Android)")
+        for line in platform_diff.split("\n"):
+            if line.strip() and not line.startswith("#"):
+                out.append(f"  {line.strip()}")
+
+    # Mobile checklist
+    if mobile_checklist:
+        out.append(f"\n◆ MOBILE PLATFORM CHECKLIST")
+        for line in mobile_checklist.split("\n"):
+            if line.strip() and not line.startswith("#"):
+                out.append(f"  {line}")
+
     # Template scaffold
     if template_markdown:
         out.append(f"\n◆ PRD TEMPLATE SCAFFOLD (copy and fill in)")
@@ -188,7 +262,8 @@ def _render_ascii(project, product_type, template, depth, personas, sections_ord
 
 def _render_markdown(project, product_type, template, depth, personas, sections_order,
                      considerations, oos, sections, stories, metrics, antipatterns,
-                     template_markdown):
+                     template_markdown, mobile_checklist="", platform_diff="",
+                     platform_rules="", ux_patterns=None):
     lines = []
 
     lines.append(f"# PRD Doc Pro — {project}")
@@ -251,6 +326,34 @@ def _render_markdown(project, product_type, template, depth, personas, sections_
     if oos:
         lines.append(f"\n## Common Out-of-Scope Mistakes")
         lines.append(f"> {oos}")
+
+    # Mobile-specific sections
+    if ux_patterns:
+        lines.append(f"\n## Recommended Mobile UX Patterns")
+        for p in ux_patterns:
+            name = p.get("Pattern Name", "")
+            plat = p.get("Platform", "")
+            desc = p.get("Description", "")
+            guidance = p.get("PRD Guidance", "")
+            good = _truncate(p.get("Good Example", ""), 150)
+            bad = _truncate(p.get("Bad Example", ""), 150)
+            a11y = _truncate(p.get("Accessibility Note", ""), 150)
+            lines.append(f"\n### {name} ({plat})")
+            lines.append(f"{desc}")
+            lines.append(f"\n**PRD Guidance:** {guidance}")
+            lines.append(f"- **Good:** {good}")
+            lines.append(f"- **Bad:** {bad}")
+            if a11y:
+                lines.append(f"- **Accessibility:** {a11y}")
+
+    if platform_rules:
+        lines.append(f"\n{platform_rules}")
+
+    if platform_diff:
+        lines.append(f"\n{platform_diff}")
+
+    if mobile_checklist:
+        lines.append(f"\n{mobile_checklist}")
 
     if template_markdown:
         lines.append(f"\n## PRD Template Scaffold")
