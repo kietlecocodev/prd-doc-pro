@@ -18,6 +18,7 @@ Use when the user wants to: create/draft/review/score/improve/export a PRD, writ
 | Export | `search.py --export <file> --export-format confluence\|notion\|html\|text` |
 | Show example | `search.py --example good/01-problem-statement` |
 | List examples | `search.py --list-examples` |
+| Visualize flow | See `flow-visualizer/SKILL.md` — generates FigJam/Miro diagrams from PRD content |
 
 ## Domains
 `product-type` (24), `section` (18), `user-story` (31), `antipattern` (25), `metric` (28), `template` (9), `platform-rules` (20), `mobile-ux` (20)
@@ -77,3 +78,6 @@ Before delivering any PRD:
 - [ ] For mobile: platform checklist complete (iOS + Android requirements)
 - [ ] For mobile: app store compliance verified
 - [ ] Launch plan includes phased rollout + rollback triggers + feature flags
+
+## Flow Visualization
+After generating or reviewing a PRD, offer to visualize key flows using the `flow-visualizer` sub-skill. Say: "Want me to visualize this as a flow diagram in FigJam?" Supports user journeys, decision trees, swimlanes, system architecture, and rollout plans. See `flow-visualizer/SKILL.md` for full details.
