@@ -1,0 +1,8 @@
+{
+  "name": "prd-doc-pro",
+  "version": "1.0.0",
+  "description": "PRD intelligence engine for SaaS mobile products. Create, review, score, and export PRDs.",
+  "author": {
+    "name": "kietlecocodev"
+  }
+}

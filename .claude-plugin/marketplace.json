@@ -1,0 +1,14 @@
+{
+  "name": "prd-doc-pro",
+  "owner": {
+    "name": "kietlecocodev",
+    "url": "https://github.com/kietlecocodev"
+  },
+  "plugins": [
+    {
+      "name": "prd-doc-pro",
+      "source": "./plugins/prd-doc-pro",
+      "description": "PRD intelligence engine for SaaS mobile products. Create, review, score, and export PRDs."
+    }
+  ]
+}
